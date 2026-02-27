@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Performance Dashboard — Lease-Up &amp; Renewal Specialist</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:       #1B2A4A;
+  --mid-blue:   #2E4A7A;
+  --steel:      #3B5998;
+  --gold:       #C9A84C;
+  --white:      #ffffff;
+  --lt-blue:    #E8EDF5;
+  --lt-gray:    #F3F4F6;
+  --d-gray:     #374151;
+  --gray:       #6B7280;
+  --green:      #1E6B3E;
+  --lt-green:   #DCFCE7;
+  --amber:      #B45309;
+  --lt-amber:   #FEF3C7;
+  --orange:     #C2410C;
+  --lt-orange:  #FFF7ED;
+  --red:        #991B1B;
+  --lt-red:     #FEF2F2;
+  --rule:       #E5E7EB;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+       background: var(--lt-gray); color: var(--d-gray); font-size: 13px; }
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+.header {
+  background: var(--navy); color: white;
+  padding: 16px 28px; display: flex; justify-content: space-between; align-items: center;
+}
+.header-brand { display: flex; align-items: center; gap: 14px; }
+.brand-dot { width: 34px; height: 34px; border-radius: 6px; background: var(--gold);
+             display: flex; align-items: center; justify-content: center;
+             font-weight: 900; color: var(--navy); font-size: 15px; }
+.header-title { font-size: 16px; font-weight: 700; }
+.header-sub   { font-size: 11px; color: #93A3C0; margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.quarter-select {
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+  color: white; font-size: 13px; font-weight: 600; padding: 6px 12px;
+  border-radius: 6px; cursor: pointer; outline: none;
+}
+.quarter-select option { background: var(--navy); }
+
+/* ── Info Bar ───────────────────────────────────────────────────────────────── */
+.info-bar {
+  background: var(--mid-blue); padding: 10px 28px;
+  display: flex; gap: 36px; align-items: center; flex-wrap: wrap;
+}
+.info-chip label { font-size: 9px; font-weight: 700; color: #93A3C0;
+                   letter-spacing: 0.08em; text-transform: uppercase; display: block; }
+.info-chip span  { font-size: 13px; color: white; font-weight: 500; }
+.info-chip .chip-val { font-size: 13px; color: white; font-weight: 600; }
+.info-divider { width: 1px; height: 30px; background: rgba(255,255,255,0.15); }
+
+/* ── Data Note ──────────────────────────────────────────────────────────────── */
+.data-note {
+  margin: 14px 28px 0;
+  padding: 9px 14px;
+  background: var(--lt-blue); border-left: 3px solid var(--steel);
+  border-radius: 4px; font-size: 11px; color: var(--mid-blue); line-height: 1.6;
+}
+.data-note code { font-family: 'Courier New', monospace; font-size: 10px;
+                  background: rgba(46,74,122,0.12); padding: 1px 5px; border-radius: 3px; }
+
+/* ── Layout ─────────────────────────────────────────────────────────────────── */
+.main { padding: 16px 28px 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.summary-section { padding: 16px 28px 28px; }
+
+/* ── Pillar Cards ───────────────────────────────────────────────────────────── */
+.card { background: white; border-radius: 8px; border: 1px solid var(--rule);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; }
+.card-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--rule);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.card-title { font-size: 11px; font-weight: 700; text-transform: uppercase;
+              letter-spacing: 0.07em; color: var(--gray); }
+.pillar-label { font-size: 13px; font-weight: 700; color: var(--navy); margin-top: 2px; }
+.weight-badge {
+  font-size: 11px; font-weight: 700; color: var(--mid-blue);
+  background: var(--lt-blue); padding: 4px 10px; border-radius: 12px;
+}
+.card-body { padding: 16px; }
+
+/* ── Metric Rows ────────────────────────────────────────────────────────────── */
+.metric-row { margin-bottom: 16px; }
+.metric-row:last-child { margin-bottom: 0; }
+.metric-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+.metric-name { font-size: 11px; font-weight: 600; color: var(--d-gray); }
+.metric-value { font-size: 15px; font-weight: 800; color: var(--navy); }
+.metric-value.below  { color: var(--red); }
+.metric-value.meets  { color: var(--amber); }
+.metric-value.exceeds { color: var(--green); }
+.metric-targets { font-size: 10px; color: var(--gray); margin-bottom: 5px; }
+.metric-targets .sep { margin: 0 6px; color: var(--rule); }
+.prog-wrap { height: 7px; background: var(--lt-gray); border-radius: 4px; overflow: hidden; position: relative; }
+.prog-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+.prog-below   { background: #DC2626; }
+.prog-meets   { background: var(--amber); }
+.prog-exceeds { background: var(--green); }
+.prog-marks { position: relative; height: 14px; }
+.prog-mark { position: absolute; top: 0; font-size: 9px; color: var(--gray);
+             transform: translateX(-50%); white-space: nowrap; }
+
+/* Boolean metric */
+.bool-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.bool-row:last-child { margin-bottom: 0; }
+.bool-name { font-size: 11px; font-weight: 600; color: var(--d-gray); max-width: 65%; line-height: 1.4; }
+.bool-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+.bool-exceeds { background: var(--lt-green); color: var(--green); }
+.bool-meets   { background: var(--lt-amber); color: var(--amber); }
+.bool-none    { background: var(--lt-red);   color: var(--red); }
+
+/* ── Tier Footer ────────────────────────────────────────────────────────────── */
+.card-footer {
+  border-top: 1px solid var(--rule); padding: 12px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--lt-gray);
+}
+.tier-badge { font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 5px; }
+.tier-exceeds { background: var(--lt-green); color: var(--green); }
+.tier-meets   { background: var(--lt-amber); color: var(--amber); }
+.tier-partial { background: var(--lt-orange); color: var(--orange); }
+.tier-none    { background: var(--lt-red);   color: var(--red); }
+
+.payout-col { text-align: right; }
+.payout-label { font-size: 9px; font-weight: 700; color: var(--gray); text-transform: uppercase;
+                letter-spacing: 0.07em; }
+.payout-amount { font-size: 22px; font-weight: 800; line-height: 1.1; }
+.payout-exceeds { color: var(--green); }
+.payout-meets   { color: var(--amber); }
+.payout-partial { color: var(--orange); }
+.payout-none    { color: var(--red); }
+.payout-of { font-size: 10px; color: var(--gray); }
+
+/* ── Summary Card ───────────────────────────────────────────────────────────── */
+.summary-card {
+  background: white; border-radius: 8px; border: 1px solid var(--rule);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 20px 24px;
+}
+.summary-card h2 { font-size: 11px; font-weight: 700; text-transform: uppercase;
+                   letter-spacing: 0.07em; color: var(--gray); margin-bottom: 18px; }
+.summary-top { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.stat-block { text-align: center; padding: 14px 8px; border-radius: 6px; background: var(--lt-gray); }
+.stat-block label { font-size: 9px; font-weight: 700; color: var(--gray); text-transform: uppercase;
+                    letter-spacing: 0.07em; display: block; margin-bottom: 4px; }
+.stat-big { font-size: 26px; font-weight: 800; color: var(--navy); }
+.stat-sub { font-size: 10px; color: var(--gray); margin-top: 2px; }
+.stat-highlight { background: var(--navy); }
+.stat-highlight label { color: #93A3C0; }
+.stat-highlight .stat-big { color: var(--gold); }
+.stat-highlight .stat-sub { color: #93A3C0; }
+
+/* Total bar */
+.total-bar-label { display: flex; justify-content: space-between; font-size: 10px;
+                   color: var(--gray); margin-bottom: 5px; }
+.total-bar-wrap { height: 12px; background: var(--lt-gray); border-radius: 6px; overflow: hidden; margin-bottom: 4px; }
+.total-bar-fill { height: 100%; border-radius: 6px;
+                  background: linear-gradient(90deg, var(--mid-blue) 0%, var(--green) 100%);
+                  transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+.total-bar-ticks { display: flex; justify-content: space-between; font-size: 9px; color: #9CA3AF; }
+
+/* Pillar breakdown strip */
+.breakdown { display: flex; gap: 10px; margin-top: 20px; }
+.bd-item { flex: 1; text-align: center; padding: 12px 8px; border-radius: 6px; border: 1px solid var(--rule); }
+.bd-label { font-size: 10px; font-weight: 700; color: var(--gray); text-transform: uppercase;
+            letter-spacing: 0.05em; margin-bottom: 4px; }
+.bd-tier  { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; display: inline-block; margin-bottom: 6px; }
+.bd-amt   { font-size: 18px; font-weight: 800; }
+
+/* ── Metric Detail Table (bottom) ───────────────────────────────────────────── */
+.detail-section { padding: 0 28px 28px; }
+.detail-card { background: white; border-radius: 8px; border: 1px solid var(--rule);
+               box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; }
+.detail-card h2 { font-size: 11px; font-weight: 700; text-transform: uppercase;
+                  letter-spacing: 0.07em; color: white; padding: 11px 16px;
+                  background: var(--mid-blue); }
+table { width: 100%; border-collapse: collapse; }
+th { font-size: 10px; font-weight: 700; color: var(--gray); text-transform: uppercase;
+     letter-spacing: 0.06em; padding: 9px 14px; background: var(--lt-gray);
+     border-bottom: 1px solid var(--rule); text-align: left; }
+td { padding: 10px 14px; border-bottom: 1px solid var(--rule); font-size: 12px; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) td { background: #FAFAFA; }
+.td-metric { font-weight: 600; color: var(--navy); }
+.td-pillar { font-size: 10px; font-weight: 700; color: var(--gray); }
+.td-chip { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.dot-exceeds { background: var(--green); }
+.dot-meets   { background: var(--amber); }
+.dot-partial { background: var(--orange); }
+.dot-none    { background: var(--red); }
+
+/* ── Footer ─────────────────────────────────────────────────────────────────── */
+.page-footer { text-align: center; padding: 14px; font-size: 10px; color: #9CA3AF; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DATA LAYER
+     ─────────────────────────────────────────────────────────────────────────
+     To connect a live data source, replace the `DATA` constant below with
+     an API fetch, e.g.:
+       const DATA = await fetch('/api/specialist/performance?q=Q1&y=2026').then(r => r.json());
+     The shape of the object must match what is defined here.
+════════════════════════════════════════════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+//  DATA LAYER  —  Replace this object with your API response
+// ─────────────────────────────────────────────────────────────────────────────
+const DATA = {
+  meta: {
+    specialist:  "Jac Heflin",
+    title:       "Lease-Up & Renewal Specialist",
+    baseSalary:  85000,          // Annual base salary ($)
+    quarter:     "Q1",
+    year:        2026,
+  },
+  pillars: {
+    // ── A. Renewals ──────────────────────────────────────────────────────────
+    renewals: {
+      renewalRatio:     74,      // %   — portfolio renewal ratio
+      qoqImprovement:   11,      // %   — quarter-over-quarter improvement
+      rentGrowth:       4.8,     // %   — portfolio-wide rent growth
+    },
+    // ── B. Lease-Up ──────────────────────────────────────────────────────────
+    leaseUp: {
+      occupancyVsBudget: 85,     // %   — % of portfolio on budget for occupancy
+    },
+    // ── C. Marketing ─────────────────────────────────────────────────────────
+    marketing: {
+      momApplicationGrowth:  12, // %   — month-over-month application growth
+      leadToLeaseRate:       30, // %   — lead-to-lease conversion rate
+      weeklyFeedback:        "meets",  // "exceeds" | "meets" | "none"
+      //   "exceeds" = weekly feedback + monthly synthesis report
+      //   "meets"   = weekly documented feedback only
+      //   "none"    = not provided
+    },
+  },
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+// ── Thresholds (mirror the policy exactly) ────────────────────────────────────
+const THRESHOLDS = {
+  renewals: {
+    renewalRatio:    { meets: 70,  exceeds: 80  },
+    qoqImprovement:  { meets: 10,  exceeds: 15  },
+    rentGrowth:      { meets: 4,   exceeds: 6   },
+  },
+  leaseUp: {
+    occupancyVsBudget: { meets: 70, exceeds: 100 },
+  },
+  marketing: {
+    momApplicationGrowth: { meets: 10, exceeds: 15  },
+    leadToLeaseRate:      { meets: 28, exceeds: 35  },
+    // weeklyFeedback is handled as a string enum
+  },
+};
+
+// ── Payout weights ────────────────────────────────────────────────────────────
+const WEIGHTS = { renewals: 0.40, leaseUp: 0.40, marketing: 0.20 };
+
+// ── Tier helpers ──────────────────────────────────────────────────────────────
+function metricTier(val, thresh) {
+  if (val >= thresh.exceeds) return "exceeds";
+  if (val >= thresh.meets)   return "meets";
+  return "none";
+}
+
+function pillarPayoutPct(tierList) {
+  // tierList: array of "exceeds" | "meets" | "none"
+  const exc = tierList.filter(t => t === "exceeds").length;
+  const met = tierList.filter(t => t === "meets" || t === "exceeds").length;
+  const n   = tierList.length;
+  if (exc === n)        return { pct: 1.00, tier: "exceeds" };
+  if (met === n)        return { pct: 0.75, tier: "meets"   };
+  if (met >= n - 1)     return { pct: 0.50, tier: "partial" };
+  return                       { pct: 0.00, tier: "none"    };
+}
+
+// Lease-Up has its own single-metric rule
+function leaseUpPayoutPct(occupancy) {
+  if (occupancy >= 100) return { pct: 1.00, tier: "exceeds" };
+  if (occupancy >= 70)  return { pct: 0.75, tier: "meets"   };
+  return                       { pct: 0.00, tier: "none"    };
+}
+
+// ── Calculation engine ────────────────────────────────────────────────────────
+function calculate(data) {
+  const { baseSalary, quarter, year } = data.meta;
+  const quarterlyBudget = baseSalary * 0.05;
+  const { renewals, leaseUp, marketing } = data.pillars;
+  const T = THRESHOLDS;
+
+  // -- Renewals
+  const rTiers = [
+    metricTier(renewals.renewalRatio,    T.renewals.renewalRatio),
+    metricTier(renewals.qoqImprovement,  T.renewals.qoqImprovement),
+    metricTier(renewals.rentGrowth,      T.renewals.rentGrowth),
+  ];
+  const rResult  = pillarPayoutPct(rTiers);
+  const rAlloc   = quarterlyBudget * WEIGHTS.renewals;
+  const rPayout  = rAlloc * rResult.pct;
+
+  // -- Lease-Up
+  const lResult  = leaseUpPayoutPct(leaseUp.occupancyVsBudget);
+  const lAlloc   = quarterlyBudget * WEIGHTS.leaseUp;
+  const lPayout  = lAlloc * lResult.pct;
+
+  // -- Marketing
+  const mTiers = [
+    metricTier(marketing.momApplicationGrowth, T.marketing.momApplicationGrowth),
+    metricTier(marketing.leadToLeaseRate,       T.marketing.leadToLeaseRate),
+    marketing.weeklyFeedback,   // already "exceeds" | "meets" | "none"
+  ];
+  const mResult  = pillarPayoutPct(mTiers);
+  const mAlloc   = quarterlyBudget * WEIGHTS.marketing;
+  const mPayout  = mAlloc * mResult.pct;
+
+  const totalPayout  = rPayout + lPayout + mPayout;
+  const pctOfBudget  = (totalPayout / quarterlyBudget) * 100;
+
+  return {
+    quarterlyBudget, rTiers, rResult, rAlloc, rPayout,
+    lResult, lAlloc, lPayout, mTiers, mResult, mAlloc, mPayout,
+    totalPayout, pctOfBudget,
+  };
+}
+
+// ── Formatting helpers ────────────────────────────────────────────────────────
+const fmt$ = n => '$' + Math.round(n).toLocaleString();
+const fmtP = n => n.toFixed(1) + '%';
+
+function tierLabel(t) {
+  return { exceeds: "EXCEEDS TARGET", meets: "MEETS TARGET",
+           partial: "PARTIAL", none: "NOT MET" }[t] || t.toUpperCase();
+}
+function tierClass(t) {
+  return { exceeds: "exceeds", meets: "meets", partial: "partial", none: "none" }[t] || "none";
+}
+
+// ── Progress bar helpers ──────────────────────────────────────────────────────
+function progWidth(val, meetsT, cap = 150) {
+  return Math.min((val / meetsT) * 70, cap) + "%";
+}
+function progClass(tier) {
+  return { exceeds: "prog-exceeds", meets: "prog-meets", none: "prog-below" }[tier] || "prog-below";
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  const d  = DATA;
+  const m  = d.meta;
+  const p  = d.pillars;
+  const C  = calculate(d);
+  const T  = THRESHOLDS;
+
+  // ── Header / info bar
+  document.getElementById("quarter-display").textContent = `${m.quarter} ${m.year}`;
+  document.getElementById("info-specialist").textContent = m.specialist;
+  document.getElementById("info-salary").textContent = fmt$(m.baseSalary);
+  document.getElementById("info-budget").textContent  = fmt$(C.quarterlyBudget);
+  document.getElementById("info-quarter").textContent = `${m.quarter} ${m.year}`;
+
+  // ── Pillar A: Renewals
+  const [rr, qi, rg] = C.rTiers;
+  document.getElementById("r-ratio-val").textContent   = fmtP(p.renewals.renewalRatio);
+  document.getElementById("r-ratio-val").className     = "metric-value " + tierClass(rr);
+  document.getElementById("r-ratio-bar").style.width   = progWidth(p.renewals.renewalRatio, T.renewals.renewalRatio.meets);
+  document.getElementById("r-ratio-bar").className     = "prog-fill " + progClass(rr);
+
+  document.getElementById("r-qoq-val").textContent     = "+" + fmtP(p.renewals.qoqImprovement);
+  document.getElementById("r-qoq-val").className       = "metric-value " + tierClass(qi);
+  document.getElementById("r-qoq-bar").style.width     = progWidth(p.renewals.qoqImprovement, T.renewals.qoqImprovement.meets);
+  document.getElementById("r-qoq-bar").className       = "prog-fill " + progClass(qi);
+
+  document.getElementById("r-rent-val").textContent    = fmtP(p.renewals.rentGrowth);
+  document.getElementById("r-rent-val").className      = "metric-value " + tierClass(rg);
+  document.getElementById("r-rent-bar").style.width    = progWidth(p.renewals.rentGrowth, T.renewals.rentGrowth.meets);
+  document.getElementById("r-rent-bar").className      = "prog-fill " + progClass(rg);
+
+  const rTC = tierClass(C.rResult.tier);
+  document.getElementById("r-tier-badge").textContent  = tierLabel(C.rResult.tier);
+  document.getElementById("r-tier-badge").className    = "tier-badge tier-" + rTC;
+  document.getElementById("r-payout").textContent      = fmt$(C.rPayout);
+  document.getElementById("r-payout").className        = "payout-amount payout-" + rTC;
+  document.getElementById("r-payout-of").textContent   = "of " + fmt$(C.rAlloc);
+
+  // ── Pillar B: Lease-Up
+  const lv = p.leaseUp.occupancyVsBudget;
+  const lTC = tierClass(C.lResult.tier);
+  document.getElementById("l-occ-val").textContent     = fmtP(lv);
+  document.getElementById("l-occ-val").className       = "metric-value " + lTC;
+  document.getElementById("l-occ-bar").style.width     = Math.min((lv / 70) * 70, 100) + "%";
+  document.getElementById("l-occ-bar").className       = "prog-fill " + progClass(C.lResult.tier);
+
+  document.getElementById("l-tier-badge").textContent  = tierLabel(C.lResult.tier);
+  document.getElementById("l-tier-badge").className    = "tier-badge tier-" + lTC;
+  document.getElementById("l-payout").textContent      = fmt$(C.lPayout);
+  document.getElementById("l-payout").className        = "payout-amount payout-" + lTC;
+  document.getElementById("l-payout-of").textContent   = "of " + fmt$(C.lAlloc);
+
+  // ── Pillar C: Marketing
+  const [mg, lr, wf] = C.mTiers;
+  document.getElementById("m-app-val").textContent     = fmtP(p.marketing.momApplicationGrowth);
+  document.getElementById("m-app-val").className       = "metric-value " + tierClass(mg);
+  document.getElementById("m-app-bar").style.width     = progWidth(p.marketing.momApplicationGrowth, T.marketing.momApplicationGrowth.meets);
+  document.getElementById("m-app-bar").className       = "prog-fill " + progClass(mg);
+
+  document.getElementById("m-ltl-val").textContent     = fmtP(p.marketing.leadToLeaseRate);
+  document.getElementById("m-ltl-val").className       = "metric-value " + tierClass(lr);
+  document.getElementById("m-ltl-bar").style.width     = progWidth(p.marketing.leadToLeaseRate, T.marketing.leadToLeaseRate.meets);
+  document.getElementById("m-ltl-bar").className       = "prog-fill " + progClass(lr);
+
+  const wfLabels = { exceeds: "Yes + Monthly Synthesis", meets: "Weekly ✓", none: "Not Provided" };
+  const wfBadgeC = { exceeds: "bool-exceeds", meets: "bool-meets", none: "bool-none" };
+  document.getElementById("m-wf-badge").textContent    = wfLabels[wf] || wf;
+  document.getElementById("m-wf-badge").className      = "bool-badge " + (wfBadgeC[wf] || "bool-none");
+
+  const mTC = tierClass(C.mResult.tier);
+  document.getElementById("m-tier-badge").textContent  = tierLabel(C.mResult.tier);
+  document.getElementById("m-tier-badge").className    = "tier-badge tier-" + mTC;
+  document.getElementById("m-payout").textContent      = fmt$(C.mPayout);
+  document.getElementById("m-payout").className        = "payout-amount payout-" + mTC;
+  document.getElementById("m-payout-of").textContent   = "of " + fmt$(C.mAlloc);
+
+  // ── Summary
+  document.getElementById("s-total").textContent    = fmt$(C.totalPayout);
+  document.getElementById("s-budget").textContent   = fmt$(C.quarterlyBudget);
+  document.getElementById("s-pct").textContent      = fmtP(C.pctOfBudget);
+  document.getElementById("s-annual").textContent   = fmt$(m.baseSalary * 0.20);
+  document.getElementById("total-bar").style.width  = Math.min(C.pctOfBudget, 100) + "%";
+
+  // breakdown strip
+  const bdItems = [
+    { id: "bd-r", payout: C.rPayout, tier: C.rResult.tier, label: "Renewals" },
+    { id: "bd-l", payout: C.lPayout, tier: C.lResult.tier, label: "Lease-Up" },
+    { id: "bd-m", payout: C.mPayout, tier: C.mResult.tier, label: "Marketing" },
+  ];
+  bdItems.forEach(({ id, payout, tier, label }) => {
+    const tc = tierClass(tier);
+    document.getElementById(id + "-amt").textContent  = fmt$(payout);
+    document.getElementById(id + "-amt").className    = "bd-amt payout-" + tc;
+    document.getElementById(id + "-tier").textContent = tierLabel(tier);
+    document.getElementById(id + "-tier").className   = "bd-tier tier-" + tc;
+  });
+
+  // ── Detail table
+  const rows = [
+    { pillar:"A — Renewals",  name:"Portfolio Renewal Ratio",        val: fmtP(p.renewals.renewalRatio),           tier: rr, meets: "≥ 70%",  exceeds: "≥ 80%" },
+    { pillar:"A — Renewals",  name:"QoQ Improvement",                val: "+" + fmtP(p.renewals.qoqImprovement),  tier: qi, meets: "≥ +10%", exceeds: "≥ +15%" },
+    { pillar:"A — Renewals",  name:"Portfolio-Wide Rent Growth",     val: fmtP(p.renewals.rentGrowth),             tier: rg, meets: "> 4%",   exceeds: "> 6%" },
+    { pillar:"B — Lease-Up",  name:"Portfolio Occupancy vs. Budget", val: fmtP(lv),                                tier: C.lResult.tier, meets: "≥ 70%", exceeds: "100%" },
+    { pillar:"C — Marketing", name:"MoM Application Growth",        val: fmtP(p.marketing.momApplicationGrowth),  tier: mg, meets: "≥ 10%",  exceeds: "≥ 15%" },
+    { pillar:"C — Marketing", name:"Lead-to-Lease Conversion",      val: fmtP(p.marketing.leadToLeaseRate),        tier: lr, meets: "≥ 28%",  exceeds: "≥ 35%" },
+    { pillar:"C — Marketing", name:"Weekly Leasing Feedback",        val: wfLabels[wf],                            tier: wf, meets: "Provided", exceeds: "+ Synthesis" },
+  ];
+
+  const tbody = document.getElementById("detail-tbody");
+  tbody.innerHTML = rows.map(r => {
+    const tc = tierClass(r.tier);
+    return `<tr>
+      <td class="td-pillar">${r.pillar}</td>
+      <td class="td-metric">${r.name}</td>
+      <td style="font-weight:700">${r.val}</td>
+      <td>${r.meets}</td>
+      <td>${r.exceeds}</td>
+      <td>
+        <span class="status-dot dot-${tc}"></span>
+        <span class="td-chip tier-${tc}" style="padding:3px 9px;border-radius:10px;font-size:10px;font-weight:700;background:${tc==='exceeds'?'var(--lt-green)':tc==='meets'?'var(--lt-amber)':tc==='partial'?'var(--lt-orange)':'var(--lt-red)'};color:${tc==='exceeds'?'var(--green)':tc==='meets'?'var(--amber)':tc==='partial'?'var(--orange)':'var(--red)'}">${tierLabel(r.tier)}</span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+window.addEventListener("DOMContentLoaded", render);
+</script>
+
+<!-- ══════════════ MARKUP ══════════════ -->
+
+<div class="header">
+  <div class="header-brand">
+    <div class="brand-dot">R</div>
+    <div>
+      <div class="header-title">Lease-Up &amp; Renewal Specialist — Performance Dashboard</div>
+      <div class="header-sub">Incentive Compensation Tracker · Conventional Portfolio · Manager View</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="quarter-display" class="quarter-select" style="cursor:default"></span>
+  </div>
+</div>
+
+<div class="info-bar">
+  <div class="info-chip">
+    <label>Specialist</label>
+    <span id="info-specialist" class="chip-val">—</span>
+  </div>
+  <div class="info-divider"></div>
+  <div class="info-chip">
+    <label>Base Salary</label>
+    <span id="info-salary" class="chip-val">—</span>
+  </div>
+  <div class="info-divider"></div>
+  <div class="info-chip">
+    <label>Quarterly Budget Ceiling</label>
+    <span id="info-budget" class="chip-val">—</span>
+  </div>
+  <div class="info-divider"></div>
+  <div class="info-chip">
+    <label>Period</label>
+    <span id="info-quarter" class="chip-val">—</span>
+  </div>
+</div>
+
+<div class="data-note">
+  <strong>Data Layer:</strong> Metrics are sourced from the <code>DATA</code> object in this file.
+  To connect a live feed, replace <code>const DATA = { … }</code> with
+  <code>const DATA = await fetch('/api/specialist/performance').then(r =&gt; r.json())</code>.
+</div>
+
+<!-- ── Pillar Cards ─────────────────────────────────────────────────────────── -->
+<div class="main">
+
+  <!-- PILLAR A: RENEWALS -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Pillar A</div>
+        <div class="pillar-label">Renewals Performance</div>
+      </div>
+      <div class="weight-badge">40% Weight</div>
+    </div>
+    <div class="card-body">
+
+      <div class="metric-row">
+        <div class="metric-top">
+          <span class="metric-name">Portfolio Renewal Ratio</span>
+          <span id="r-ratio-val" class="metric-value">—</span>
+        </div>
+        <div class="metric-targets">Meets: ≥ 70%<span class="sep">|</span>Exceeds: ≥ 80%</div>
+        <div class="prog-wrap"><div id="r-ratio-bar" class="prog-fill" style="width:0%"></div></div>
+        <div class="prog-marks">
+          <span class="prog-mark" style="left:70%">70%</span>
+          <span class="prog-mark" style="left:88%">80%</span>
+        </div>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric-top">
+          <span class="metric-name">QoQ Improvement</span>
+          <span id="r-qoq-val" class="metric-value">—</span>
+        </div>
+        <div class="metric-targets">Meets: +10%<span class="sep">|</span>Exceeds: +15%</div>
+        <div class="prog-wrap"><div id="r-qoq-bar" class="prog-fill" style="width:0%"></div></div>
+        <div class="prog-marks">
+          <span class="prog-mark" style="left:70%">+10%</span>
+          <span class="prog-mark" style="left:88%">+15%</span>
+        </div>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric-top">
+          <span class="metric-name">Portfolio-Wide Rent Growth</span>
+          <span id="r-rent-val" class="metric-value">—</span>
+        </div>
+        <div class="metric-targets">Meets: &gt; 4%<span class="sep">|</span>Exceeds: &gt; 6%</div>
+        <div class="prog-wrap"><div id="r-rent-bar" class="prog-fill" style="width:0%"></div></div>
+        <div class="prog-marks">
+          <span class="prog-mark" style="left:70%">4%</span>
+          <span class="prog-mark" style="left:88%">6%</span>
+        </div>
+      </div>
+
+    </div>
+    <div class="card-footer">
+      <span id="r-tier-badge" class="tier-badge">—</span>
+      <div class="payout-col">
+        <div class="payout-label">Pillar Payout</div>
+        <div id="r-payout" class="payout-amount">—</div>
+        <div id="r-payout-of" class="payout-of">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PILLAR B: LEASE-UP -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Pillar B</div>
+        <div class="pillar-label">Lease-Up Performance</div>
+      </div>
+      <div class="weight-badge">40% Weight</div>
+    </div>
+    <div class="card-body">
+
+      <div class="metric-row" style="margin-bottom:8px">
+        <div class="metric-top">
+          <span class="metric-name">Portfolio Occupancy vs. Budget</span>
+          <span id="l-occ-val" class="metric-value">—</span>
+        </div>
+        <div class="metric-targets">Meets: ≥ 70% of portfolio on budget<span class="sep">|</span>Exceeds: 100% on/ahead</div>
+        <div class="prog-wrap"><div id="l-occ-bar" class="prog-fill" style="width:0%"></div></div>
+        <div class="prog-marks">
+          <span class="prog-mark" style="left:70%">70%</span>
+          <span class="prog-mark" style="left:88%">100%</span>
+        </div>
+      </div>
+
+      <!-- Payout rule callout -->
+      <div style="margin-top:22px;padding:12px;background:var(--lt-gray);border-radius:6px;font-size:11px;color:var(--gray);line-height:1.7">
+        <strong style="color:var(--navy)">Payout Rules</strong><br>
+        100% on/ahead of budget → <strong style="color:var(--green)">100%</strong><br>
+        ≥ 70% on budget → <strong style="color:var(--amber)">75%</strong><br>
+        Below 70% → <strong style="color:var(--red)">0%</strong>
+      </div>
+
+    </div>
+    <div class="card-footer">
+      <span id="l-tier-badge" class="tier-badge">—</span>
+      <div class="payout-col">
+        <div class="payout-label">Pillar Payout</div>
+        <div id="l-payout" class="payout-amount">—</div>
+        <div id="l-payout-of" class="payout-of">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PILLAR C: MARKETING -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Pillar C</div>
+        <div class="pillar-label">Marketing &amp; Conversion</div>
+      </div>
+      <div class="weight-badge">20% Weight</div>
+    </div>
+    <div class="card-body">
+
+      <div class="metric-row">
+        <div class="metric-top">
+          <span class="metric-name">MoM Application Growth</span>
+          <span id="m-app-val" class="metric-value">—</span>
+        </div>
+        <div class="metric-targets">Meets: ≥ 10%<span class="sep">|</span>Exceeds: ≥ 15%</div>
+        <div class="prog-wrap"><div id="m-app-bar" class="prog-fill" style="width:0%"></div></div>
+        <div class="prog-marks">
+          <span class="prog-mark" style="left:70%">10%</span>
+          <span class="prog-mark" style="left:88%">15%</span>
+        </div>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric-top">
+          <span class="metric-name">Lead-to-Lease Conversion</span>
+          <span id="m-ltl-val" class="metric-value">—</span>
+        </div>
+        <div class="metric-targets">Meets: ≥ 28%<span class="sep">|</span>Exceeds: ≥ 35%</div>
+        <div class="prog-wrap"><div id="m-ltl-bar" class="prog-fill" style="width:0%"></div></div>
+        <div class="prog-marks">
+          <span class="prog-mark" style="left:70%">28%</span>
+          <span class="prog-mark" style="left:88%">35%</span>
+        </div>
+      </div>
+
+      <div class="bool-row">
+        <span class="bool-name">Weekly Leasing Feedback to Marketing</span>
+        <span id="m-wf-badge" class="bool-badge">—</span>
+      </div>
+
+    </div>
+    <div class="card-footer">
+      <span id="m-tier-badge" class="tier-badge">—</span>
+      <div class="payout-col">
+        <div class="payout-label">Pillar Payout</div>
+        <div id="m-payout" class="payout-amount">—</div>
+        <div id="m-payout-of" class="payout-of">—</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.main -->
+
+<!-- ── Summary Card ──────────────────────────────────────────────────────────── -->
+<div class="summary-section">
+  <div class="summary-card">
+    <h2>Quarterly Payout Summary</h2>
+
+    <div class="summary-top">
+      <div class="stat-block stat-highlight">
+        <label>Total Q Payout</label>
+        <div id="s-total" class="stat-big">—</div>
+        <div id="s-budget-sub" class="stat-sub">of <span id="s-budget">—</span> ceiling</div>
+      </div>
+      <div class="stat-block">
+        <label>% of Budget Earned</label>
+        <div id="s-pct" class="stat-big">—</div>
+        <div class="stat-sub">5% quarterly cap</div>
+      </div>
+      <div class="stat-block">
+        <label>Annual Bonus Target</label>
+        <div id="s-annual" class="stat-big">—</div>
+        <div class="stat-sub">20% of base salary</div>
+      </div>
+      <div class="stat-block">
+        <label>Max Q Payout</label>
+        <div class="stat-big" id="s-max">—</div>
+        <div class="stat-sub">Exceeds all pillars</div>
+      </div>
+    </div>
+
+    <div class="total-bar-label">
+      <span>$0</span>
+      <span id="s-budget-bar-label">—</span>
+    </div>
+    <div class="total-bar-wrap">
+      <div id="total-bar" class="total-bar-fill" style="width:0%"></div>
+    </div>
+    <div class="total-bar-ticks">
+      <span>$0</span><span>25%</span><span>50%</span><span>75%</span><span>100% (cap)</span>
+    </div>
+
+    <!-- Pillar breakdown -->
+    <div class="breakdown">
+      <div class="bd-item">
+        <div class="bd-label">Renewals</div>
+        <span id="bd-r-tier" class="bd-tier">—</span>
+        <div id="bd-r-amt" class="bd-amt">—</div>
+      </div>
+      <div class="bd-item">
+        <div class="bd-label">Lease-Up</div>
+        <span id="bd-l-tier" class="bd-tier">—</span>
+        <div id="bd-l-amt" class="bd-amt">—</div>
+      </div>
+      <div class="bd-item">
+        <div class="bd-label">Marketing</div>
+        <span id="bd-m-tier" class="bd-tier">—</span>
+        <div id="bd-m-amt" class="bd-amt">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Metric Detail Table ───────────────────────────────────────────────────── -->
+<div class="detail-section">
+  <div class="detail-card">
+    <h2>All Metrics — Detailed View</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Pillar</th>
+          <th>Metric</th>
+          <th>Current Value</th>
+          <th>Meets Target</th>
+          <th>Exceeds Target</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="detail-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Extra render for s-max and bar label -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const qb = DATA.meta.baseSalary * 0.05;
+  document.getElementById("s-max").textContent          = "$" + Math.round(qb).toLocaleString();
+  document.getElementById("s-budget-bar-label").textContent = "$" + Math.round(qb).toLocaleString() + " ceiling";
+});
+</script>
+
+<div class="page-footer">
+  CONFIDENTIAL — Internal Use Only &nbsp;|&nbsp; Risere &nbsp;|&nbsp;
+  Lease-Up &amp; Renewal Specialist Incentive Plan · Conventional Portfolio Only
+</div>
+
+</body>
+</html>
